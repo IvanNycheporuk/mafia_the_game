@@ -11,25 +11,34 @@
 </head>
 <body>
     <div class="container">
-        <form>
+        <h1 class="text-center m-3">setup mafia games</h1>
+        <p>it works good for the followig setup: <mark>participants 28 | tables 2 | games 14</mark></p>
+        <p>
+            However we concerned on how to calculate the correct amount of brakes for any amount of participants <br>
+            Also if there any formula for calculating the number of games + breaks based on the number of participants?
+        </p>
+        <form class="mb-3 needs-validation" novalidate>
             <div class="mb-3">
                 <label for="participantsCount" class="form-label">Participants</label>
-                <input type="number" class="form-control" id="participantsCount">
+                <input type="number" class="form-control" id="participantsCount" required>
+                <div class="invalid-feedback">Please set number of participants</div>
             </div>
             <div class="mb-3">
                 <label for="tablesCount" class="form-label">Tables</label>
-                <input type="number" class="form-control" id="tablesCount">
+                <input type="number" class="form-control" id="tablesCount" required>
+                <div class="invalid-feedback">Please set number of tables</div>
             </div>
             <div class="mb-3">
                 <label for="gamesCount" class="form-label">Games</label>
-                <input type="number" class="form-control" id="gamesCount">
+                <input type="number" class="form-control" id="gamesCount" required>
+                <div class="invalid-feedback">Please set number of games(including brakes)</div>
             </div>
 
             <div class="mb-3">
                 <input type="checkbox" class="shuffle" /> Should be shuffled
             </div>
 
-            <button type="button" class="btn btn-primary btn-calculate">Submit</button>
+            <button type="submit" class="btn btn-primary btn-calculate">Submit</button>
         </form>
 
         <div class="structure"></div>
@@ -269,6 +278,28 @@
 
             return result;
         }
+
+        // validation
+        (function () {
+            'use strict'
+
+            // Fetch all the forms we want to apply custom Bootstrap validation styles to
+            var forms = document.querySelectorAll('.needs-validation')
+
+            // Loop over them and prevent submission
+            Array.prototype.slice.call(forms)
+                .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    }
+
+                    form.classList.add('was-validated')
+                    event.preventDefault()
+                }, false)
+                })
+        })()
 
     </script>
 </body>
