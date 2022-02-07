@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -9,6 +10,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
 </head>
+
 <body>
     <div class="container">
         <h1 class="text-center m-3">setup mafia games</h1>
@@ -23,7 +25,7 @@
                 <input type="number" class="form-control" id="participantsCount" required>
                 <div class="invalid-feedback">Please set number of participants</div>
             </div>
-            <div class="mb-3">
+            <!-- <div class="mb-3">
                 <label for="tablesCount" class="form-label">Tables</label>
                 <input type="number" class="form-control" id="tablesCount" required>
                 <div class="invalid-feedback">Please set number of tables</div>
@@ -32,13 +34,23 @@
                 <label for="gamesCount" class="form-label">Games</label>
                 <input type="number" class="form-control" id="gamesCount" required>
                 <div class="invalid-feedback">Please set number of games(including brakes)</div>
-            </div>
-
+            </div> -->
+            <button type="submit" class="btn btn-primary btn-calculate">Calcualte games count</button>
             <div class="mb-3">
-                <input type="checkbox" class="shuffle" /> Should be shuffled
+                <label for="gamesCount" class="form-label">Posible amount of games for setted amount of
+                    participants</label>
+
+                <div class="row gamesCount"></div>
             </div>
 
-            <button type="submit" class="btn btn-primary btn-calculate">Submit</button>
+            <div class="mb-3 build-table-container" hidden>
+                <label for="">
+                    <span>Should be shuffled</span>
+                    <input type="checkbox" class="shuffle" />
+                </label>
+                <br>
+                <button type="submit" class="btn btn-primary btn-build-table">Build table</button>
+            </div>
         </form>
 
         <div class="structure"></div>
@@ -133,6 +145,11 @@
                 }
                 */
 
+
+                if (sortedParticipants.length === 0) {
+                    console.log('Round', globalGame);
+                }
+
                 return sortedParticipants[0].participant;
 
                 function getWeight(participant) {
@@ -216,10 +233,31 @@
             return [...array].sort((a, b) => 0.5 - Math.random());
         }
 
+        let participantsCount = 0;
+        let gamesCount = 0;
+        let tablesCount = Math.floor(participantsCount / 10);
+
         document.querySelector('.btn-calculate').addEventListener('click', () => {
-            const participantsCount = +document.querySelector('#participantsCount').value; // 28
-            const tablesCount = +document.querySelector('#tablesCount').value; // 2
-            const gamesCount = +document.querySelector('#gamesCount').value; // [1,14]
+            participantsCount = +document.querySelector('#participantsCount').value; // 28
+            // calculate by the formula participantsCount / 10 
+            // const tablesCount = +document.querySelector('#tablesCount').value; // 2
+            //const gamesCount = +document.querySelector('#gamesCount').value; // [1,14]
+
+            let delay = participantsCount % 10;
+
+            let arrayOfPossibleGames = [];
+
+            for (let i = 1; i < 100; i++) {
+                let totalDelay = i * delay;
+                if (totalDelay % participantsCount == 0) {
+                    arrayOfPossibleGames.push(i);
+                }
+            }
+
+            buildCalculatedGamesCount(arrayOfPossibleGames);
+        });
+
+        document.querySelector('.btn-build-table').addEventListener('click', () => {
             const minGames = participantsCount % 10 / tablesCount;
 
             let guard = 1000;
@@ -231,13 +269,49 @@
                 isOk = isRowStructureOk(minGames) && isColumnStructureOk(gamesCount, tablesCount);
 
                 counter++;
-                if (counter > guard)
-                {
+                if (counter > guard) {
                     alert(`I can't calculate the optimize structure`);
                     break;
                 }
             }
         });
+
+        function buildCalculatedGamesCount(arr) {
+            let container = document.body.querySelector('.gamesCount');
+
+            container.innerHTML = arr.map(item => {
+                let btn = document.createElement('button');
+
+                btn.className = 'btn btn-outline-primary col m-1';
+                btn.innerText = item;
+
+                return btn.outerHTML;
+            }).join('');
+
+            if (container.querySelectorAll('.btn').length === 0) {
+                alert('please specify correct amount of players!');
+                return;
+            }
+
+            container.querySelectorAll('.btn').forEach((btn) => {
+                btn.addEventListener('click', setAmountOfGames);
+            });
+
+        }
+
+        function setAmountOfGames(e) {
+            let btns = document.body.querySelectorAll('.gamesCount .btn');
+
+            btns.forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            document.body.querySelector('.build-table-container').removeAttribute('hidden');
+
+            e.target.classList.add('active');
+
+            gamesCount = e.target.innerText;
+        }
 
 
         function isRowStructureOk(minGames) {
@@ -266,8 +340,7 @@
                 });
                 let set = [...new Set(values)];
 
-                if (values.length != set.length || set.length != placesPerRound)
-                {
+                if (values.length != set.length || set.length != placesPerRound) {
                     result = false;
                     console.log(`values(${values.length}) vs set(${set.length})`);
                     tds.forEach(td => {
@@ -289,18 +362,19 @@
             // Loop over them and prevent submission
             Array.prototype.slice.call(forms)
                 .forEach(function (form) {
-                form.addEventListener('submit', function (event) {
-                    if (!form.checkValidity()) {
-                    event.preventDefault()
-                    event.stopPropagation()
-                    }
+                    form.addEventListener('submit', function (event) {
+                        if (!form.checkValidity()) {
+                            event.preventDefault()
+                            event.stopPropagation()
+                        }
 
-                    form.classList.add('was-validated')
-                    event.preventDefault()
-                }, false)
+                        form.classList.add('was-validated')
+                        event.preventDefault()
+                    }, false)
                 })
         })()
 
     </script>
 </body>
+
 </html>
