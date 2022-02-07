@@ -235,6 +235,7 @@
 
         let participantsCount = 0;
         let gamesCount = 0;
+        let tablesCount = Math.floor(participantsCount / 10);
 
         document.querySelector('.btn-calculate').addEventListener('click', () => {
             participantsCount = +document.querySelector('#participantsCount').value; // 28
@@ -257,8 +258,6 @@
         });
 
         document.querySelector('.btn-build-table').addEventListener('click', () => {
-            let tablesCount = Math.floor(participantsCount / 10);
-
             const minGames = participantsCount % 10 / tablesCount;
 
             let guard = 1000;
