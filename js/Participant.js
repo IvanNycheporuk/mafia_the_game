@@ -26,6 +26,10 @@ class Participant {
         return this.Opponents.indexOf(id) !== -1;
     }
 
+    GetOpponentIntersectCount(id) {
+        return this.Opponents.filter(item => item == id).length;
+    }
+
     AddPosition(number) {
         this.PlayedPositions.push(number);
     }
