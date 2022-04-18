@@ -72,72 +72,29 @@
         const tableNames = ['A', 'B', 'C', 'D', 'E', 'F'];
 
         function calculateChampionshipStructure(participantsCount, tablesCount, gamesCount) {
-            let matrix = [];
-            let matrixElement = document.querySelector('.matrix');
+            let participants = [];
             let tables = [];
-            const roundTables = []; // gamesCount
-            const freePlayers = participantsCount - tablesCount * 10;
-            const participants = [];
+            let rounds = [];
 
             for (let i = 0; i < participantsCount; i++) {
                 participants.push(new Participant(i + 1, "Player " + (i + 1)));
             }
 
-            for (let i = 1; i <= participantsCount; i++) {
-                let arr = [];
-                for (let j = 0; j < gamesCount; j++) {
-                    let num = j + i;
-                    if (num > 10) {
-                        num = num % 10;
-                    }
-
-                    arr.push(num);
-                }
-
-                matrix.push(arr);
+            let shouldBeShuffled = document.querySelector('.shuffle').checked;
+            if (shouldBeShuffled) {
+                participants = getShuffledArray(participants);
             }
 
-            let b = 0; // offset
-            for (let r = gamesCount - 1; r >= 0; r--) {
-                for (let i = 0; i < freePlayers; i++) {
-                    matrix[b][r] = "*";
-                    b++;
-
-                    if (b > participantsCount - 1) {
-                        b = 0;
-                    }
-                }
-            }
-
-            for (let i = 0; i < participantsCount; i++) {
-                let iterator = 0;
-                for (let j = 0; j < gamesCount; j++) {
-                    let el = matrix[i][j]
-
-                    if (el != "*") {
-                        iterator++;
-                        let num = iterator + i;
-                        if (num > 10) {
-                            num = num % 10;
-
-                            if (num == 0) {
-                                num = 10;
-                            }
-                        }
-
-                        matrix[i][j] = num;
-                    }
-                }
-            }
-
-            for (let round = 0; round < gamesCount; round++) {
+            let globalGame = 0;
+            for (let game = 0; game < gamesCount; game++) {
+                globalGame = game;
                 for (let t = 0; t < tablesCount; t++) {
                     const table = new Table(tableNames[t]);
                     tables.push(table);
 
-                    // Register all participantsCount for table
+                    // Register all participants for table
                     for (i = 0; i < 10; i++) {
-                        let p = getParticipant(table, round, i + 1);
+                        let p = getParticipant(table, i);
                         table.AddParticipant(p);
                         p.AddPosition(i);
                     }
@@ -155,27 +112,22 @@
                     }
                 }
 
-                roundTables.push({
+                rounds.push({
                     tables: tables
                 });
                 tables = [];
             }
 
-            console.table(matrix);
-            console.log(roundTables)
+            console.log(rounds);
 
-            renderRoundsStructure(participants, roundTables);
+            renderRoundsStructure(participants, rounds);
 
-            function getParticipant(table, round, position) {
-                let participantsOnThisPosition = [];
+            function getParticipant(table, position) {
+                let foundedParticipant = null;
 
-                for (let i = 0; i < participantsCount; i++) {
-                    if (matrix[i][round] == position) {
-                        participantsOnThisPosition.push(participants[i]);
-                    }
-                }
-
-                let sortedparticipants = participantsOnThisPosition
+                let filteredParticipants = participants.filter(item => !item.HasPosition(position));
+                //let shuffledParticipants = getShuffledArray(filteredParticipants);
+                let sortedParticipants = filteredParticipants
                     .map(x => {
                         return {
                             participant: x,
@@ -184,29 +136,68 @@
                     })
                     .sort((a, b) => a.weight - b.weight);
 
-                return sortedparticipants[0].participant;
+                /*
+                console.log('sorted participants', sortedParticipants);
+                let selectedParticipant = sortedParticipants[0];
+                if (selectedParticipant.weight > 1000) {
+                    console.log('selected participant', selectedParticipant);
+                    console.log(sortedParticipants);
+                    console.log(table.Name, position + 1);
+                    console.log('Round', globalGame);
+                }
+                */
+
+
+                if (sortedParticipants.length === 0) {
+                    console.log('Round', globalGame);
+                }
+
+                return sortedParticipants[0].participant;
 
                 function getWeight(participant) {
                     let w = 0;
+                    // First of all, push in the end of the queue guys who has more played rounds
+                    w += participant.Rounds * 100;
+
+                    for (let i = table.Participants.length; i < 10; i++) {
+                        if (!participant.HasPosition(i)) {
+                            w += 10;
+                            // console.log('has multiple options');
+                        }
+                    }
 
                     table.Participants.forEach(p => {
-                        if (participant.HasOpponent(p.Id) || participant.Rounds > 0) {
-                            w += participant.GetOpponentIntersectCount(p.Id);
+                        if (participant.HasOpponent(p.Id)) {
+                            w++;
                         }
                     });
 
-                    // if (tables.some(x => x.HasParticipant(participant.Id))) {
-                    //     tables.forEach(table => {
-                    //         table.Participants.forEach(p => {
-                    //             if (participant.HasOpponent(p.Id)) {
-                    //                 w += participant.GetOpponentIntersectCount(p.Id);
-                    //             }
-                    //         })
-                    //     });
-                    // }
+                    // Already assigned to table
+                    if (tables.some(x => x.HasParticipant(participant.Id))) {
+                        w += 10000;
+                    }
 
                     return w;
                 }
+
+                participants.forEach((participant) => {
+                    if (tables.some(x => x.HasParticipant(participant.Id))) {
+                        return false;
+                    }
+
+                    // Check if participant had a game with someone from the table
+                    if (table.Participants.every(x => x.HasOpponent(participant.Id) == false)) {
+                        foundedParticipant = participant;
+                        return true;
+                    }
+                });
+
+                if (foundedParticipant != null) {
+                    return foundedParticipant;
+                }
+
+                console.log(table.Participants);
+                throw "Can't find a free participant";
             }
         }
 
@@ -219,6 +210,10 @@
 
                 rounds.forEach(round => {
                     let table = round.tables.find(t => t.HasParticipant(item.Id));
+                    let dTables = round.tables.filter(x => x.HasParticipant(item.Id));
+                    if (dTables.length > 1) {
+                        // console.log(dTables);
+                    }
 
                     if (table != null) {
                         let position = table.GetParticipantPosition(item.Id) + 1;
@@ -234,6 +229,10 @@
 
             let html = `<table class='table table-striped'>${tableBody}</table>`;
             document.querySelector('.structure').innerHTML = html;
+        }
+
+        function getShuffledArray(array) {
+            return [...array].sort((a, b) => 0.5 - Math.random());
         }
 
         let participantsCount = 0;
@@ -261,7 +260,23 @@
 
         document.querySelector('.btn-build-table').addEventListener('click', () => {
             let tablesCount = Math.floor(participantsCount / 10);
-            calculateChampionshipStructure(participantsCount, tablesCount, gamesCount);
+
+            const minGames = participantsCount % 10 / tablesCount;
+
+            let guard = 1000;
+            let counter = 0;
+            let isOk = false;
+
+            while (!isOk) {
+                calculateChampionshipStructure(participantsCount, tablesCount, gamesCount);
+                isOk = isRowStructureOk(minGames) && isColumnStructureOk(gamesCount, tablesCount);
+
+                counter++;
+                if (counter > guard) {
+                    alert(`I can't calculate the optimize structure`);
+                    break;
+                }
+            }
         });
 
         function buildCalculatedGamesCount(arr) {
@@ -299,6 +314,45 @@
             e.target.classList.add('active');
 
             gamesCount = e.target.innerText;
+        }
+
+
+        function isRowStructureOk(minGames) {
+            let result = true;
+            let trs = document.querySelectorAll('tr');
+            // Highlight wrong calculated participants
+            trs.forEach(tr => {
+                let tds = tr.querySelectorAll('.slot');
+                if (tds.length < minGames) {
+                    tr.classList.add('bg-danger', 'text-white');
+                    result = false;
+                }
+            });
+
+            return result;
+        }
+
+        function isColumnStructureOk(rounds, tables) {
+            let result = true;
+            let placesPerRound = tables * 10; // Tables * placePerTable
+
+            for (let round = 2; round <= rounds; round++) {
+                let tds = Array.from(document.querySelectorAll(`tr td:nth-child(${round})`));
+                let values = tds.map(el => el.innerText).filter(v => {
+                    return !v.includes("*:*");
+                });
+                let set = [...new Set(values)];
+
+                if (values.length != set.length || set.length != placesPerRound) {
+                    result = false;
+                    console.log(`values(${values.length}) vs set(${set.length})`);
+                    tds.forEach(td => {
+                        td.classList.add('bg-warning');
+                    });
+                }
+            }
+
+            return result;
         }
 
         // validation
